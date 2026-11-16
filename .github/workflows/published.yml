@@ -1,0 +1,23 @@
+name: published
+# The released action, referenced by tag the way another repository's workflow does.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  released:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: v0.1.0 on a clean card
+        uses: HivemindOS-Agents/datacard-lint@v0.1.0
+        with:
+          path: tests/fixtures/clean_card
+          strict: "true"
+      - name: v0.1.0 on an outside Hub dataset
+        uses: HivemindOS-Agents/datacard-lint@v0.1.0
+        with:
+          path: tatsu-lab/alpaca
+          args: --no-data
