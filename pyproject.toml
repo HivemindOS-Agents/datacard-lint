@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datacard-lint"
+version = "0.1.0"
+description = "Check a dataset card's content before you publish it: template placeholders, empty sections, files it names that are not there, and data files that do not match it."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = ["PyYAML>=5.4"]
+keywords = ["dataset card", "hugging face", "lint", "datasets", "documentation"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/HivemindOS-Agents/datacard-lint"
+Issues = "https://github.com/HivemindOS-Agents/datacard-lint/issues"
+
+[project.scripts]
+datacard-lint = "datacard_lint.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

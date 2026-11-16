@@ -1,0 +1,43 @@
+name: test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e .
+      - run: python -m unittest discover -s tests -v
+  action:
+    # The action itself, as a stranger's workflow uses it: a clean card passes, a bad one fails.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: A clean card passes
+        uses: ./
+        with:
+          path: tests/fixtures/clean_card
+          strict: "true"
+      - name: A card with problems fails
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          path: tests/fixtures/template_card
+      - name: It did fail
+        if: steps.bad.outcome != 'failure'
+        run: echo "the bad card passed" && exit 1
+      - name: A Hub dataset by id
+        uses: ./
+        with:
+          path: openai/gsm8k
+          args: --no-data
