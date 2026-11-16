@@ -12,6 +12,9 @@ datacard-lint ./my-dataset          # a folder with a README.md
 datacard-lint owner/name            # a dataset on the Hugging Face Hub
 ```
 
+Or open [the Space](https://huggingface.co/spaces/LiamVisionary/datacard-lint), which runs the same checks in your
+browser on any public dataset, or on a card you paste.
+
 ```text
 WARN placeholder (README.md:132): 'Dataset Description' still has the template's [More Information Needed] (3 times)
 WARN empty_section (README.md:91): 'Supported Tasks and Leaderboards' has nothing under it
@@ -85,6 +88,12 @@ checked by hand against the card or file. It found template placeholders left in
 `rajpurkar/squad`, `cais/mmlu`, `tatsu-lab/alpaca` and `openai/openai_humaneval`. It found three datasets with no
 card, two with no license in their header, and one with an empty links column. Four false alarms in that run
 (`source` columns of names, read as links) were fixed before release.
+
+## The Space
+
+`space/` is the Hugging Face Space: one static page that runs this package in the browser with Pyodide, fetches the
+dataset's files itself, and reads up to 8 data files of 5 MB. Rebuild its wheel with `pip wheel --no-deps -w space .`
+after a version change.
 
 ## Tests
 

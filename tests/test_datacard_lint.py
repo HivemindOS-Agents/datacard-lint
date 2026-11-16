@@ -257,6 +257,25 @@ class Hub(unittest.TestCase):
             HubSource("not a/valid/id", opener=lambda u, h: (b"[]", {}), token="")
 
 
+class Memory(unittest.TestCase):
+    """The source the Hugging Face Space uses: files fetched by the browser, or a card pasted on its own."""
+
+    def test_fetched_files_are_checked_like_the_hub(self):
+        from datacard_lint.sources import MemorySource
+        readme = (FIX / "template_card" / "README.md").read_text()
+        csv = (FIX / "template_card" / "data" / "train.csv").read_bytes()
+        source = MemorySource("hf://datasets/o/n", readme, {"data/train.csv": len(csv)}, {"data/train.csv": csv})
+        problems = run_checks(parse_card(source.readme()), source)
+        self.assertEqual(sorted({p.id for p in problems}), ["empty_link", "empty_section", "missing_file", "no_license", "placeholder", "ragged_rows"])
+
+    def test_a_pasted_card_calls_nothing_missing(self):
+        from datacard_lint.sources import MemorySource
+        readme = (FIX / "template_card" / "README.md").read_text()
+        source = MemorySource("pasted card", readme, complete=False)
+        problems = run_checks(parse_card(readme), source, data=False)
+        self.assertEqual(sorted({p.id for p in problems}), ["empty_section", "files_not_listed", "no_license", "placeholder"])
+
+
 class CommandLine(unittest.TestCase):
     def run_cli(self, *args):
         out, err = io.StringIO(), io.StringIO()

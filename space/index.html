@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>datacard-lint</title>
+<meta name="description" content="Check a Hugging Face dataset card's content: template placeholders, empty sections, missing files, data that does not match the card. Runs in your browser.">
+<style>
+  :root {
+    --bg: #fbfaf7; --panel: #ffffff; --ink: #1d1b16; --muted: #6b675d; --line: #e6e2d8;
+    --accent: #c98a00; --accent-ink: #1d1b16;
+    --err: #b42318; --err-bg: #fdecea; --warn: #8a5a00; --warn-bg: #fff4d6; --note: #475467; --note-bg: #eef1f5;
+    --ok: #16794a; --ok-bg: #e7f6ee; --code: #f3f1ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12110e; --panel: #1b1a16; --ink: #f2efe7; --muted: #a29d90; --line: #2e2c26;
+      --accent: #f0b429; --accent-ink: #12110e;
+      --err: #ff8a80; --err-bg: #3a1714; --warn: #f7c25a; --warn-bg: #362a10; --note: #b8c2d0; --note-bg: #222833;
+      --ok: #6fd7a0; --ok-bg: #12301f; --code: #24221d;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 40px 16px 56px; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  .lede { color: var(--muted); margin: 0 0 28px; max-width: 640px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .modes { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; margin-bottom: 14px; }
+  .modes button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+  .modes button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+  .row { display: flex; gap: 10px; }
+  input[type=text], textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+  textarea { min-height: 220px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .go { flex: none; font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 0 20px; background: var(--accent); color: var(--accent-ink); cursor: pointer; min-height: 46px; display: inline-flex; align-items: center; gap: 8px; }
+  .go:disabled { opacity: 0.6; cursor: progress; }
+  .examples { margin-top: 12px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .examples button { font: inherit; font-size: 13px; color: var(--ink); background: var(--code); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+  .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
+  #status { margin: 18px 2px 0; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 8px; min-height: 22px; }
+  #status.error { color: var(--err); }
+  #result { margin-top: 18px; }
+  .summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .summary h2 { font-size: 18px; margin: 0 8px 0 0; word-break: break-all; }
+  .pill { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .pill.error { background: var(--err-bg); color: var(--err); }
+  .pill.warning { background: var(--warn-bg); color: var(--warn); }
+  .pill.note { background: var(--note-bg); color: var(--note); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  ul.problems { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.problems li { border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; }
+  li.error { background: var(--err-bg); } li.warning { background: var(--warn-bg); } li.note { background: var(--note-bg); }
+  .tag { font: 600 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+  li.error .tag { color: var(--err); } li.warning .tag { color: var(--warn); } li.note .tag { color: var(--note); }
+  .msg { overflow-wrap: anywhere; }
+  .where { grid-column: 2; font-size: 13px; color: var(--muted); }
+  .where a { color: inherit; }
+  .clean { background: var(--ok-bg); color: var(--ok); border-radius: 10px; padding: 14px; font-weight: 600; }
+  footer { margin-top: 40px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+  footer a { color: var(--ink); }
+  code { background: var(--code); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  @media (max-width: 560px) {
+    h1 { font-size: 28px; }
+    .row { flex-direction: column; }
+    .go { justify-content: center; }
+    ul.problems li { grid-template-columns: 1fr; }
+    .where { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>datacard<span>-</span>lint</h1>
+  <p class="lede">Check what a dataset card says before people rely on it: the template's <code>[More Information Needed]</code> left in, empty sections, files it names that are not there, and data files that do not match it. Runs in your browser; it only reads from huggingface.co.</p>
+
+  <div class="panel">
+    <div class="modes" role="group" aria-label="What to check">
+      <button type="button" id="mode-hub" aria-pressed="true">A dataset on the Hub</button>
+      <button type="button" id="mode-paste" aria-pressed="false">Paste a card</button>
+    </div>
+    <form id="form" autocomplete="off">
+      <div id="hub-input" class="row">
+        <input type="text" id="dataset" placeholder="owner/name, or the dataset's URL" aria-label="Dataset id" spellcheck="false">
+        <button class="go" type="submit" id="go">Check</button>
+      </div>
+      <div id="paste-input" hidden>
+        <textarea id="card" placeholder="Paste a README.md, YAML header and all" aria-label="Dataset card" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:10px; justify-content:flex-end"><button class="go" type="submit" id="go-paste">Check the card</button></div>
+      </div>
+    </form>
+    <div class="examples" id="examples">Try:
+      <button type="button" data-id="stanfordnlp/imdb">stanfordnlp/imdb</button>
+      <button type="button" data-id="openai/openai_humaneval">openai/openai_humaneval</button>
+      <button type="button" data-id="openai/gsm8k">openai/gsm8k</button>
+    </div>
+  </div>
+
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="result"></div>
+
+  <footer>
+    Built from the dataset-card checkers that two HivemindOS agents made for their own datasets,
+    <a href="https://hivemindos.app/agents/hivepunkz/632" target="_blank" rel="noopener">HivePunk #632</a> and
+    <a href="https://hivemindos.app/agents/hivepunkz/547" target="_blank" rel="noopener">HivePunk #547</a>.
+    The same checks run on your machine and in CI: <code>pip install "git+https://github.com/HivemindOS-Agents/datacard-lint"</code>,
+    or the <a href="https://github.com/HivemindOS-Agents/datacard-lint" target="_blank" rel="noopener">GitHub Action</a>. MIT licensed.
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+<script>
+const HUB = "https://huggingface.co";
+const WHEEL = "datacard_lint-0.1.1-py3-none-any.whl";
+const DATA_FILES_MOST = 8, DATA_FILE_MOST_BYTES = 5 * 1024 * 1024, DATA_MOST_BYTES = 25 * 1024 * 1024, LIST_PAGES_MOST = 50;
+
+const $ = (id) => document.getElementById(id);
+const status = (text, busy = false, error = false) => {
+  const s = $("status");
+  s.className = error ? "error" : "";
+  s.replaceChildren();
+  if (busy) { const d = document.createElement("span"); d.className = "spin"; d.setAttribute("aria-hidden", "true"); s.append(d); }
+  if (text) s.append(document.createTextNode(text));
+};
+
+// Python, loaded once on first use.
+let py = null;
+async function python() {
+  if (py) return py;
+  status("Loading the checker into your browser (first time only)…", true);
+  const pyodide = await loadPyodide();
+  await pyodide.loadPackage(["pyyaml", "micropip"]);
+  const micropip = pyodide.pyimport("micropip");
+  await micropip.install(new URL(WHEEL, location.href).href, { deps: false });
+  pyodide.runPython(`
+import json
+from datacard_lint.card import parse_card
+from datacard_lint.checks import run_checks, configs_of, _patterns, matching
+from datacard_lint.sources import MemorySource
+
+def plan(readme, files_json):
+    """The data files the checker would read first: the ones the card's configs name, then the rest by name."""
+    files = json.loads(files_json)
+    tables = sorted(f for f in files if f.lower().endswith((".csv", ".tsv")))
+    card = parse_card(readme) if readme is not None else None
+    named = set()
+    if card is not None:
+        for config in configs_of(card.metadata):
+            for p in _patterns(config.get("data_files")):
+                named.update(matching(p, tables))
+    return json.dumps(sorted(tables, key=lambda f: (f not in named, f)))
+
+def check(payload_json):
+    p = json.loads(payload_json)
+    source = MemorySource(p["name"], p["readme"], p["files"], {k: v.encode("utf-8") for k, v in p["contents"].items()}, p["complete"])
+    card = parse_card(p["readme"]) if p["readme"] is not None else None
+    problems = run_checks(card, source, data=p["data"])
+    return json.dumps([x.as_dict() for x in problems])
+`);
+  py = pyodide;
+  return py;
+}
+
+function datasetId(text) {
+  let id = text.trim().replace(/^hf:\/\/datasets\//, "").replace(/^https?:\/\/huggingface\.co\/datasets\//, "");
+  id = id.split(/\/(?:tree|blob|resolve|viewer)\//)[0].replace(/\/+$/, "");
+  return /^[A-Za-z0-9][\w.-]*(\/[A-Za-z0-9][\w.-]*)?$/.test(id) ? id : null;
+}
+
+async function listFiles(id) {
+  const files = {};
+  let url = `${HUB}/api/datasets/${id}/tree/main?recursive=true&expand=false`, pages = 0;
+  while (url && pages < LIST_PAGES_MOST) {
+    pages++;
+    const r = await fetch(url);
+    // The Hub answers 401 for a dataset that does not exist as for a private one, so as not to say which.
+    if (r.status === 401 || r.status === 403) throw new Error(`There is no public dataset called ${id}: it does not exist, or it is private or gated. This page reads public datasets only (the command reads private ones with HF_TOKEN).`);
+    if (r.status === 404) throw new Error(`There is no public dataset called ${id}.`);
+    if (!r.ok) throw new Error(`The Hub answered ${r.status} for ${id}.`);
+    for (const e of await r.json()) if (e.type === "file") files[e.path] = typeof e.size === "number" ? e.size : null;
+    const next = (r.headers.get("link") || "").match(/<([^>]+)>\s*;\s*rel="?next"?/);
+    url = next && next[1].startsWith(HUB) ? next[1] : null;
+    if (url) status(`Listing ${id}'s files (${Object.keys(files).length.toLocaleString()} so far)…`, true);
+  }
+  return { files, complete: !url };
+}
+
+async function checkHub(id) {
+  status(`Reading ${id} from the Hub…`, true);
+  const { files, complete } = await listFiles(id);
+  const readme = "README.md" in files ? await (await fetch(`${HUB}/datasets/${id}/resolve/main/README.md`)).text() : null;
+  const pyo = await python();
+  const order = JSON.parse(pyo.globals.get("plan")(readme, JSON.stringify(files)));
+  const contents = {};
+  let read = 0, bytes = 0;
+  for (const path of order) {
+    const size = files[path];
+    if (read >= DATA_FILES_MOST || size == null || size > DATA_FILE_MOST_BYTES || bytes + size > DATA_MOST_BYTES) continue;
+    status(`Reading ${path}…`, true);
+    const r = await fetch(`${HUB}/datasets/${id}/resolve/main/${path.split("/").map(encodeURIComponent).join("/")}`);
+    if (!r.ok) continue;
+    contents[path] = await r.text();
+    read++; bytes += size;
+  }
+  status("Checking…", true);
+  const problems = JSON.parse(pyo.globals.get("check")(JSON.stringify({ name: `hf://datasets/${id}`, readme, files, contents, complete, data: true })));
+  // The checker's own note names the command's limits; the page has its own.
+  for (const p of problems) if (p.id === "data_not_read" && !p.file) p.message = `${order.length - read} of ${order.length} CSV/TSV file(s) were not read here (this page reads ${DATA_FILES_MOST}, ${DATA_FILE_MOST_BYTES / 1048576} MB each). The command reads more: datacard-lint ${id} --data-files ${order.length}`;
+  show(`hf://datasets/${id}`, problems, id);
+}
+
+async function checkPasted(text) {
+  const pyo = await python();
+  status("Checking…", true);
+  const problems = JSON.parse(pyo.globals.get("check")(JSON.stringify({ name: "pasted card", readme: text, files: {}, contents: {}, complete: false, data: false })));
+  show("Pasted card", problems, null);
+}
+
+function show(title, problems, id) {
+  const order = { error: 0, warning: 1, note: 2 };
+  problems.sort((a, b) => order[a.severity] - order[b.severity] || (a.line || 0) - (b.line || 0));
+  const count = (s) => problems.filter((p) => p.severity === s).length;
+  const result = $("result");
+  result.replaceChildren();
+  const head = document.createElement("div");
+  head.className = "summary";
+  const h = document.createElement("h2"); h.textContent = title; head.append(h);
+  const pill = (cls, text) => { const s = document.createElement("span"); s.className = `pill ${cls}`; s.textContent = text; head.append(s); };
+  const e = count("error"), w = count("warning"), n = count("note");
+  if (!e && !w) pill("ok", "Nothing to fix");
+  if (e) pill("error", `${e} error${e === 1 ? "" : "s"}`);
+  if (w) pill("warning", `${w} warning${w === 1 ? "" : "s"}`);
+  if (n) pill("note", `${n} note${n === 1 ? "" : "s"}`);
+  result.append(head);
+  if (!problems.length) {
+    const ok = document.createElement("div"); ok.className = "clean"; ok.textContent = "No problems found in the card or the data files read."; result.append(ok);
+  }
+  const list = document.createElement("ul"); list.className = "problems";
+  for (const p of problems) {
+    const li = document.createElement("li"); li.className = p.severity;
+    const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = p.id;
+    const msg = document.createElement("span"); msg.className = "msg"; msg.textContent = p.message;
+    li.append(tag, msg);
+    if (p.file) {
+      const where = document.createElement("span"); where.className = "where";
+      const label = p.line ? `${p.file}, line ${p.line}` : p.file;
+      if (id) {
+        const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener"; a.textContent = label;
+        a.href = `${HUB}/datasets/${id}/blob/main/${p.file.split("/").map(encodeURIComponent).join("/")}${p.line ? `#L${p.line}` : ""}`;
+        where.append(a);
+      } else where.textContent = label;
+      li.append(where);
+    }
+    list.append(li);
+  }
+  result.append(list);
+  status("");
+}
+
+let busy = false;
+async function run(fn) {
+  if (busy) return;
+  busy = true;
+  for (const b of [$("go"), $("go-paste")]) b.disabled = true;
+  $("result").replaceChildren();
+  try { await fn(); }
+  catch (error) { status(error && error.message ? error.message : String(error), false, true); }
+  finally { busy = false; for (const b of [$("go"), $("go-paste")]) b.disabled = false; }
+}
+
+function setMode(paste) {
+  $("mode-hub").setAttribute("aria-pressed", String(!paste));
+  $("mode-paste").setAttribute("aria-pressed", String(paste));
+  $("hub-input").hidden = paste;
+  $("paste-input").hidden = !paste;
+  $("examples").hidden = paste;
+}
+$("mode-hub").onclick = () => setMode(false);
+$("mode-paste").onclick = () => setMode(true);
+
+$("form").onsubmit = (event) => {
+  event.preventDefault();
+  if (!$("paste-input").hidden) {
+    const text = $("card").value;
+    if (!text.trim()) return status("Paste a card first.", false, true);
+    return run(() => checkPasted(text));
+  }
+  const id = datasetId($("dataset").value);
+  if (!id) return status("Give a dataset id like owner/name, or its URL.", false, true);
+  const url = new URL(location.href); url.searchParams.set("dataset", id); history.replaceState(null, "", url);
+  run(() => checkHub(id));
+};
+for (const b of document.querySelectorAll("#examples button")) b.onclick = () => { $("dataset").value = b.dataset.id; $("form").requestSubmit(); };
+
+const asked = new URL(location.href).searchParams.get("dataset");
+if (asked) { $("dataset").value = asked; $("form").requestSubmit(); }
+</script>
+</body>
+</html>

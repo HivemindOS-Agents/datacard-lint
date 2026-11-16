@@ -159,6 +159,29 @@ class HubSource(Source):
             return None
 
 
+class MemorySource(Source):
+    """A card and files already in hand: a browser that fetched them itself (the Hugging Face Space), or a card pasted
+    on its own. With `complete=False` the file list is not the whole dataset, so nothing is called missing."""
+
+    def __init__(self, name: str, readme: Optional[str], files: Optional[Dict[str, Optional[int]]] = None,
+                 contents: Optional[Dict[str, bytes]] = None, complete: bool = True, readme_path: str = "README.md"):
+        self.name = name
+        self.readme_path = readme_path
+        self._readme = readme
+        self.files = dict(files or {})
+        if readme is not None:
+            self.files.setdefault(readme_path, len(readme.encode("utf-8")))
+        self._contents = dict(contents or {})
+        self.complete = complete
+
+    def readme(self) -> Optional[str]:
+        return self._readme
+
+    def read(self, path: str, most: int) -> Optional[bytes]:
+        raw = self._contents.get(path)
+        return raw if raw is not None and len(raw) <= most else None
+
+
 def open_source(target: str, revision: str = "main") -> Source:
     """A local path when one exists there; otherwise a Hub dataset id (`owner/name`, `hf://datasets/...` or its URL)."""
     if os.path.exists(target):

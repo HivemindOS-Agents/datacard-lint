@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "datacard-lint"
-version = "0.1.0"
+version = "0.1.1"
 description = "Check a dataset card's content before you publish it: template placeholders, empty sections, files it names that are not there, and data files that do not match it."
 readme = "README.md"
 license = "MIT"

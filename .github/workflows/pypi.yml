@@ -1,0 +1,21 @@
+name: pypi
+# Publishes to PyPI by trusted publishing (no token stored anywhere). Run by hand once PyPI knows this repository as a
+# trusted publisher for datacard-lint (pypi.org > Your projects > Publishing: owner HivemindOS-Agents, repository
+# datacard-lint, workflow pypi.yml, environment pypi).
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -196,6 +196,8 @@ def matching(pattern: str, files: Iterable[str]) -> List[str]:
 
 
 def _listing_cut(source: Source) -> List[Problem]:
+    if len(source.files) <= 1:
+        return [Problem("files_not_listed", NOTE, "only the card was given, so files it names were not checked")]
     return [Problem("files_not_listed", NOTE, f"the dataset has more files than were listed ({len(source.files):,}), so files the card names were not checked")]
 
 
