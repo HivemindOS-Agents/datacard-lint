@@ -118,7 +118,10 @@ class Coverage(unittest.TestCase):
             pathlib.Path(tmp, "big.csv").write_text('a,b\n1,"' + "x" * 300_000 + '"\n')
             pathlib.Path(tmp, "bad.csv").write_bytes(b'a,b\n"1\x00,2\n')
             problems = lint(tmp)
-        self.assertEqual([(p.id, p.file) for p in problems], [("ragged_rows", "bad.csv")], "a 300 KB cell is one cell; an unclosed quote is a short row")
+        self.assertFalse([p for p in problems if p.file == "big.csv"], "a 300 KB cell is one cell")
+        # A NUL and an unclosed quote: Python 3.13's csv reads a short row, 3.10's refuses the file. Either is said.
+        self.assertEqual(len(problems), 1)
+        self.assertIn((problems[0].id, problems[0].file), [("ragged_rows", "bad.csv"), ("data_not_read", "bad.csv")])
 
     def test_no_card_at_all(self):
         with tempfile.TemporaryDirectory() as tmp:
