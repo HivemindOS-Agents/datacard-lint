@@ -10,14 +10,14 @@ jobs:
   released:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: v0.1.0 on a clean card
-        uses: HivemindOS-Agents/datacard-lint@v0.1.0
+        uses: HivemindOS-Agents/datacard-lint@2ec092c73fa6ce99b32bb23903ad8cb211c018aa # v0.1.0
         with:
           path: tests/fixtures/clean_card
           strict: "true"
       - name: v0.1.0 on an outside Hub dataset
-        uses: HivemindOS-Agents/datacard-lint@v0.1.0
+        uses: HivemindOS-Agents/datacard-lint@2ec092c73fa6ce99b32bb23903ad8cb211c018aa # v0.1.0
         with:
           path: tatsu-lab/alpaca
           args: --no-data
