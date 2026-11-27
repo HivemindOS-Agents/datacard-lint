@@ -1,0 +1,7 @@
+# HB-071 E (22 Nov 2026 dev update, section 16): keep the pinned actions current.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
