@@ -12,12 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: v0.1.0 on a clean card
-        uses: HivemindOS-Agents/datacard-lint@2ec092c73fa6ce99b32bb23903ad8cb211c018aa # v0.1.0
+        uses: HivemindOS-Agents/datacard-lint@b87c919b24d80c83217af7c5672f039c95fae106 # v0.1.1
         with:
           path: tests/fixtures/clean_card
           strict: "true"
       - name: v0.1.0 on an outside Hub dataset
-        uses: HivemindOS-Agents/datacard-lint@2ec092c73fa6ce99b32bb23903ad8cb211c018aa # v0.1.0
+        uses: HivemindOS-Agents/datacard-lint@b87c919b24d80c83217af7c5672f039c95fae106 # v0.1.1
         with:
           path: tatsu-lab/alpaca
           args: --no-data
